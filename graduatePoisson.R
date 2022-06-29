@@ -1,6 +1,5 @@
 require(tidyverse)
 
-
 ##### CONSTANTS #####
 # DO NOT CHANGE THESE CONSTANTS. USE THEM AS A TEMPLATE AND THEN AS AN ARGUMENT
 INIT_PARAMETER_CLA <-
@@ -29,10 +28,10 @@ INIT_PARAMETER_GPD <-
 
 OPTIM_CONTROL_PARAMETERS <-
   list(
-    optimMethod = "L-BFGS-B",
+    optimMethod = "BFGS",
     gradMethod = "Richardson",
     # Maps to factr instead of reltol because of L-BFGS-B
-    relTolerance = 1e10,
+    relTolerance = 1e-20,
     maxIteration = 1000,
     minimumMu = 1e-20
   )
@@ -206,7 +205,7 @@ createGradAnalysis <- function(resultList) {
   lower <- log(qpois(0.025, A) / exps)
   upper <- log(qpois(0.975, A) / exps)
   
-  ModelResults <-
+  modelResults <-
     list(
       Parameters = split(unname(fittedParameters), names(fittedParameters)),
       SD = if (!is.null(paraSD)) {
@@ -238,28 +237,169 @@ createGradAnalysis <- function(resultList) {
   
   # if(length(mod) == 1) mod <- rep(mod, length(obs))
   
-  PlottingData <- data.frame(Age = ages, upper, lower, obs, mod)
-  ResidualData <- data.frame(Age = ages, devRes, stRes)
+  plottingData <- data.frame(Age = ages, upper, lower, obs, mod)
+  residualData <- data.frame(Age = ages, devRes, stRes)
   
   FinalOutput <-
     list(
-      GradData = gradData,
-      ModelResults,
-      PlottingData,
-      ResidualData,
-      GradFunc = resultList$gradFunc
+      gradData,
+      modelResults,
+      plottingData,
+      residualData,
+      gradFunc = resultList$gradFunc
     )
   names(FinalOutput) <-
-    c("GradData",
-      "ModelResults",
-      "PlottingData",
-      "ResidualData",
-      "GradFunc")
+    c("gradData",
+      "modelResults",
+      "plottingData",
+      "residualData",
+      "gradFunc")
   return(FinalOutput)
 }
 
 
-##### GRADUATE FUNCTIONS ####
+applyFittedCLAModelOnData <- function(resultList, newData) {
+  # Required packages
+  require(dplyr)
+  
+  hessian <- resultList$hessian
+  
+  # Make sure data is in the right order and extract Vectors
+  gradData <- newData %>%
+    arrange(.data$Age)
+  
+  ages <- gradData$Age
+  decs <- gradData$Deaths
+  exps <- gradData$Exposure
+  
+  rates <- resultList$gradFunc(unlist(resultList$gradResults$par), ages)
+  
+  logLike <- resultList$gradResults$value
+  fittedParameters <- resultList$gradResults$par
+  nPars <- length(fittedParameters)
+  
+  # Analysis
+  paraSD <- tryCatch({
+    sqrt(diag(solve(-resultList$hessian, tol = 1e-20)))
+  },
+  error = function(con) {
+    print("No inverse of Hessian calculated")
+    print(con)
+    return(NULL)
+  })
+  
+  ZScore <- if (!is.null(paraSD)) {
+    fittedParameters / paraSD
+  } else {
+    NULL
+  }
+  
+  pVal <- if (!is.null(ZScore)) {
+    2 * pnorm(abs(ZScore), 0, 1, lower.tail = FALSE)
+  } else {
+    NULL
+  }
+  
+  # Calculate deviance and residuals
+  A <- decs
+  E <- rates * exps
+  dev <- sum(2 * (ifelse(A == 0, 0, A * log(A / E)) - (A - E)))
+  devRes <-
+    sign(A - E) * sqrt(2 * (ifelse(A == 0, 0, A * log(A / E)) - (A - E)))
+  stRes <- (A - E) / sqrt(E)
+  
+  # Determine dispersion coefficient
+  dis <- dev / (length(ages) - nPars)
+  
+  # Chi-squared calculations
+  chi <- sum(((A - E) ^ 2) / ifelse(E == 0, 1, E))
+  chiP <- pchisq(chi, df = length(ages) - nPars, lower.tail = FALSE)
+  
+  # Information criteria
+  AIC <- -2 * logLike + 2 * nPars
+  BIC <- -2 * logLike + log(length(ages)) * nPars
+  
+  # Signs test
+  if (!any(is.na(devRes))) {
+    signsP <- sum(devRes > 0)
+    signsN <- sum(devRes < 0)
+    signsA <- if (signsP <= signsN) {
+      "less"
+    } else {
+      "greater"
+    }
+    signsTest <- binom.test(signsP, signsP + signsN,
+                            alternative = signsA)$p.value
+  } else {
+    signsP <- NULL
+    signsN <- NULL
+    signsTest <- NULL
+  }
+  
+  
+  # Runs test
+  runs <- length(rle(sign(devRes))$lengths)
+  runsP <-
+    randtests::runs.test(devRes, "left.sided", 0, "exact", FALSE)$p.value
+  
+  # Calculate 95% confidence intervals
+  lower <- log(qpois(0.025, A) / exps)
+  upper <- log(qpois(0.975, A) / exps)
+  
+  modelResults <-
+    list(
+      Parameters = split(unname(fittedParameters), names(fittedParameters)),
+      SD = if (!is.null(paraSD)) {
+        split(unname(paraSD), names(fittedParameters))
+      },
+      Hessian = resultList$hessian,
+      ZStat = if (!is.null(paraSD)) {
+        split(unname(ZScore), names(fittedParameters))
+      },
+      PVals = if (!is.null(paraSD)) {
+        split(unname(pVal), names(fittedParameters))
+      },
+      LogLikelihood = logLike,
+      AIC = AIC,
+      BIC = BIC,
+      dis = dis,
+      chi = chi,
+      chiP = chiP,
+      signsP = signsP,
+      signsN = signsN,
+      signsTest = signsTest,
+      runs = runs,
+      runsP = runsP
+    )
+  
+  # Plot data crude versus fitted central mortality Rates
+  obs <- log(decs / exps)
+  mod <- log(rates)
+  
+  # if(length(mod) == 1) mod <- rep(mod, length(obs))
+  
+  plottingData <- data.frame(Age = ages, upper, lower, obs, mod)
+  residualData <- data.frame(Age = ages, devRes, stRes)
+  
+  FinalOutput <-
+    list(
+      gradData,
+      modelResults,
+      plottingData,
+      residualData,
+      gradFunc = resultList$gradFunc
+    )
+  names(FinalOutput) <-
+    c("gradData",
+      "modelResults",
+      "plottingData",
+      "residualData",
+      "gradFunc")
+  return(FinalOutput)
+}
+
+
+##### CLASSIC GRADUATE FUNCTIONS #####
 graduatePoissonCLA <- function(data,
                                model,
                                initParameter = INIT_PARAMETER_CLA,
@@ -375,7 +515,7 @@ graduateGompertz <- function(gradData,
     upper = upperConstraint,
     control = list(
       fnscale = -1,
-      factr = optimControl$relTolerance,
+      reltol = optimControl$relTolerance,
       maxit = optimControl$maxIteration
     )
   )
@@ -475,7 +615,7 @@ graduateMakeham <- function(gradData,
     upper = upperConstraint,
     control = list(
       fnscale = -1,
-      factr = optimControl$relTolerance,
+      reltol = optimControl$relTolerance,
       maxit = optimControl$maxIteration
     )
   )
@@ -558,7 +698,7 @@ graduatePerks <- function(gradData,
     upper = upperConstraint,
     control = list(
       fnscale = -1,
-      factr = optimControl$relTolerance,
+      reltol = optimControl$relTolerance,
       maxit = optimControl$maxIteration
     )
   )
@@ -653,7 +793,7 @@ graduateBeard <- function(gradData,
     upper = upperConstraint,
     control = list(
       fnscale = -1,
-      factr = optimControl$relTolerance,
+      reltol = optimControl$relTolerance,
       maxit = optimControl$maxIteration
     )
   )
@@ -729,7 +869,7 @@ graduateMakehamPerks <- function(gradData,
   if (integratedHazard) {
     hazardFunc <- INTEGRATED_HAZARD_FUNCTIONS$makehamPerksFunc
   } else if (!integratedHazard) {
-    hazardFunc <- INTEGRATED_HAZARD_FUNCTIONS$makehamPerksFunc
+    hazardFunc <- HAZARD_FUNCTIONS$makehamPerksFunc
   }
   
   
@@ -754,7 +894,7 @@ graduateMakehamPerks <- function(gradData,
     upper = upperConstraint,
     control = list(
       fnscale = -1,
-      factr = optimControl$relTolerance,
+      reltol = optimControl$relTolerance,
       maxit = optimControl$maxIteration
     )
   )
@@ -858,7 +998,7 @@ graduateMakehamBeard <- function(gradData,
     upper = upperConstraint,
     control = list(
       fnscale = -1,
-      factr = optimControl$relTolerance,
+      reltol = optimControl$relTolerance,
       maxit = optimControl$maxIteration
     )
   )
@@ -885,6 +1025,11 @@ graduateMakehamBeard <- function(gradData,
   return(createGradAnalysis(result))
 }
 
+
+
+
+
+##### HERMITE GRADUATE FUNCTIONS #####
 graduateHermite <- function(gradData,
                             type,
                             X0 = 40,
@@ -935,39 +1080,28 @@ graduateHermite <- function(gradData,
   
   
   # Hermite Functions
-  h00 <- function(t) {
-    (1.0 + 2 * t) * (1.0 - t) * (1.0 - t)
-  }
-  h10 <- function(t) {
-    t * (1.0 - t) * (1.0 - t)
-  }
-  h01 <- function(t) {
-    t * t * (3.0 - 2 * t)
-  }
-  h11 <- function(t) {
-    t * t * (t - 1.0)
-  }
-  hQuartic <- function(t) {
-    16 * t ^ 2 * (1 - t) ^ 2
-  }
-  
   scaleAge <- function(x, x0, x1) {
     (x - x0) / (x1 - x0)
   }
   h00x <- function(x, x0, x1) {
-    h00(scaleAge(x, x0, x1))
+    t <- scaleAge(x, x0, x1)
+    return((1.0 + 2 * t) * (1.0 - t) * (1.0 - t))
   }
   h10x <- function(x, x0, x1) {
-    h10(scaleAge(x, x0, x1))
+    t <- scaleAge(x, x0, x1)
+    return(t * (1.0 - t) * (1.0 - t))
   }
   h01x <- function(x, x0, x1) {
-    h01(scaleAge(x, x0, x1))
+    t <- scaleAge(x, x0, x1)
+    return(t * t * (3.0 - 2 * t))
   }
   h11x <- function(x, x0, x1) {
-    h11(scaleAge(x, x0, x1))
+    t <- scaleAge(x, x0, x1)
+    return(t * t * (t - 1.0))
   }
   hQuarticx <- function(x, x0, x1) {
-    hQuartic(scaleAge(x, x0, x1))
+    t <- scaleAge(x, x0, x1)
+    return(16 * t ^ 2 * (1 - t) ^ 2)
   }
   
   pH <- function(para) {
@@ -1018,7 +1152,7 @@ graduateHermite <- function(gradData,
     upper = upperConstraint,
     control = list(
       fnscale = -1,
-      factr = optimControl$relTolerance,
+      reltol = optimControl$relTolerance,
       maxit = optimControl$maxIteration
     )
   )
@@ -1046,7 +1180,7 @@ graduateHermite <- function(gradData,
 }
 
 
-
+##### EVT GRADUATE FUNCTIONS #####
 graduateGompertzGPD <- function(gradData,
                                 thresholdAge,
                                 initParameter = INIT_PARAMETER_GPD,
@@ -1143,7 +1277,7 @@ graduateGompertzGPD <- function(gradData,
     upper = upperConstraint,
     control = list(
       fnscale = -1,
-      factr = optimControl$relTolerance,
+      reltol = optimControl$relTolerance,
       maxit = optimControl$maxIteration
     )
   )
@@ -1171,6 +1305,8 @@ graduateGompertzGPD <- function(gradData,
   
   return(createGradAnalysis(result))
 }
+
+
 
 
 graduateMakehamGPD <- function(gradData,
@@ -1270,7 +1406,7 @@ graduateMakehamGPD <- function(gradData,
     upper = upperConstraint,
     control = list(
       fnscale = -1,
-      factr = optimControl$relTolerance,
+      reltol = optimControl$relTolerance,
       maxit = optimControl$maxIteration
     )
   )
@@ -1289,6 +1425,7 @@ graduateMakehamGPD <- function(gradData,
       gradResults = gradResults,
       hessian = calcHessian,
       gradFunc = list(hazardFuncMakeham, hazardFuncGPD),
+      thresholdAge = thresholdAge,
       rates = rates
     )
   
