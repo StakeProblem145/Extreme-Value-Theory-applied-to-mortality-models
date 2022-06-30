@@ -112,6 +112,8 @@ HAZARD_FUNCTIONS <- list(
 )
 
 
+
+
 ##### GRADUATE RESULT ANALYSIS #####
 
 #' Statistical Analysis of a Graduation Result
@@ -258,7 +260,7 @@ createGradAnalysis <- function(resultList) {
 }
 
 
-applyFittedCLAModelOnData <- function(resultList, newData) {
+applyFittedCLAModelOnData <- function(resultList, newData, analysis = TRUE) {
   # Required packages
   require(dplyr)
   
@@ -272,7 +274,20 @@ applyFittedCLAModelOnData <- function(resultList, newData) {
   decs <- gradData$Deaths
   exps <- gradData$Exposure
   
-  rates <- resultList$gradFunc(unlist(resultList$gradResults$par), ages)
+  rates <- calculateRatesCLAModel(resultList, ages)
+  # Plot data crude versus fitted central mortality Rates
+  obs <- log(decs / exps)
+  mod <- log(rates)
+  
+  if(!analysis) {
+    plottingData <- data.frame(Age = ages, obs, mod)
+    return(
+      list(
+        gradData = gradData,
+        plottingData = plottingData
+      )
+    )
+  }
   
   logLike <- resultList$gradResults$value
   fittedParameters <- resultList$gradResults$par
@@ -372,9 +387,159 @@ applyFittedCLAModelOnData <- function(resultList, newData) {
       runsP = runsP
     )
   
+  # if(length(mod) == 1) mod <- rep(mod, length(obs))
+  
+  plottingData <- data.frame(Age = ages, upper, lower, obs, mod)
+  residualData <- data.frame(Age = ages, devRes, stRes)
+  
+  FinalOutput <-
+    list(
+      gradData,
+      modelResults,
+      plottingData,
+      residualData,
+      gradFunc = resultList$gradFunc
+    )
+  names(FinalOutput) <-
+    c("gradData",
+      "modelResults",
+      "plottingData",
+      "residualData",
+      "gradFunc")
+  return(FinalOutput)
+}
+
+calculateRatesCLAModel <- function(resultList, ages) {
+  return(resultList$gradFunc(unlist(resultList$gradResults$par), ages))
+}
+
+
+applyFittedEVTModelOnData <- function(resultList, newData, analysis = TRUE) {
+  # Required packages
+  require(dplyr)
+  
+  hessian <- resultList$hessian
+  
+  # Make sure data is in the right order and extract Vectors
+  gradData <- newData %>%
+    arrange(.data$Age)
+  
+  ages <- gradData$Age
+  decs <- gradData$Deaths
+  exps <- gradData$Exposure
+  
+  rates <- calculateRatesEVTModel(resultList, ages)
   # Plot data crude versus fitted central mortality Rates
   obs <- log(decs / exps)
   mod <- log(rates)
+  
+  if(!analysis) {
+    plottingData <- data.frame(Age = ages, obs, mod)
+    return(
+      list(
+        gradData = gradData,
+        plottingData = plottingData
+      )
+    )
+  }
+  
+  logLike <- resultList$gradResults$value
+  fittedParameters <- resultList$gradResults$par
+  nPars <- length(fittedParameters)
+  
+  # Analysis
+  paraSD <- tryCatch({
+    sqrt(diag(solve(-resultList$hessian, tol = 1e-20)))
+  },
+  error = function(con) {
+    print("No inverse of Hessian calculated")
+    print(con)
+    return(NULL)
+  })
+  
+  ZScore <- if (!is.null(paraSD)) {
+    fittedParameters / paraSD
+  } else {
+    NULL
+  }
+  
+  pVal <- if (!is.null(ZScore)) {
+    2 * pnorm(abs(ZScore), 0, 1, lower.tail = FALSE)
+  } else {
+    NULL
+  }
+  
+  # Calculate deviance and residuals
+  A <- decs
+  E <- rates * exps
+  dev <- sum(2 * (ifelse(A == 0, 0, A * log(A / E)) - (A - E)))
+  devRes <-
+    sign(A - E) * sqrt(2 * (ifelse(A == 0, 0, A * log(A / E)) - (A - E)))
+  stRes <- (A - E) / sqrt(E)
+  
+  # Determine dispersion coefficient
+  dis <- dev / (length(ages) - nPars)
+  
+  # Chi-squared calculations
+  chi <- sum(((A - E) ^ 2) / ifelse(E == 0, 1, E))
+  chiP <- pchisq(chi, df = length(ages) - nPars, lower.tail = FALSE)
+  
+  # Information criteria
+  AIC <- -2 * logLike + 2 * nPars
+  BIC <- -2 * logLike + log(length(ages)) * nPars
+  
+  # Signs test
+  if (!any(is.na(devRes))) {
+    signsP <- sum(devRes > 0)
+    signsN <- sum(devRes < 0)
+    signsA <- if (signsP <= signsN) {
+      "less"
+    } else {
+      "greater"
+    }
+    signsTest <- binom.test(signsP, signsP + signsN,
+                            alternative = signsA)$p.value
+  } else {
+    signsP <- NULL
+    signsN <- NULL
+    signsTest <- NULL
+  }
+  
+  
+  # Runs test
+  runs <- length(rle(sign(devRes))$lengths)
+  runsP <-
+    randtests::runs.test(devRes, "left.sided", 0, "exact", FALSE)$p.value
+  
+  # Calculate 95% confidence intervals
+  lower <- log(qpois(0.025, A) / exps)
+  upper <- log(qpois(0.975, A) / exps)
+  
+  modelResults <-
+    list(
+      Parameters = split(unname(fittedParameters), names(fittedParameters)),
+      SD = if (!is.null(paraSD)) {
+        split(unname(paraSD), names(fittedParameters))
+      },
+      Hessian = resultList$hessian,
+      ZStat = if (!is.null(paraSD)) {
+        split(unname(ZScore), names(fittedParameters))
+      },
+      PVals = if (!is.null(paraSD)) {
+        split(unname(pVal), names(fittedParameters))
+      },
+      LogLikelihood = logLike,
+      AIC = AIC,
+      BIC = BIC,
+      dis = dis,
+      chi = chi,
+      chiP = chiP,
+      signsP = signsP,
+      signsN = signsN,
+      signsTest = signsTest,
+      runs = runs,
+      runsP = runsP
+    )
   
   # if(length(mod) == 1) mod <- rep(mod, length(obs))
   
@@ -397,6 +562,18 @@ applyFittedCLAModelOnData <- function(resultList, newData) {
       "gradFunc")
   return(FinalOutput)
 }
+
+calculateRatesEVTModel <- function(resultList, ages) {
+  agesB <- sort(subset(ages, ages < resultList$thresholdAge))
+  agesA <- sort(subset(ages, ages >= resultList$thresholdAge))
+  
+  rates <- c(
+    resultList$gradFunc$hazardFunc(unlist(resultList$gradResults$par), ages = agesB),
+    resultList$gradFunc$hazardFuncGPD(unlist(resultList$gradResults$par), ages = agesA)
+  )
+  return(rates)
+}
+
 
 
 ##### CLASSIC GRADUATE FUNCTIONS #####
@@ -1166,6 +1343,7 @@ graduateHermite <- function(gradData,
   result <-
     list(
       gradData = gradData,
+      modelSpecifications = list(type = type, X0 = X0, X1 = X1),
       gradResults = gradResults,
       hessian = calcHessian,
       gradFunc = hermiteMu,
@@ -1227,7 +1405,7 @@ graduateGompertzGPD <- function(gradData,
   
   # Choose hazard function
   if (integratedHazard) {
-    hazardFuncGomp <- INTEGRATED_HAZARD_FUNCTIONS$gompertzFunc
+    hazardFunc <- INTEGRATED_HAZARD_FUNCTIONS$gompertzFunc
     hazardFuncGPD <- function(para, ages) {
       (log(abs(
         para["xi"] * (ages + 1 - thresholdAge) + exp(-para["alpha"] - para["beta"] * thresholdAge)
@@ -1237,7 +1415,7 @@ graduateGompertzGPD <- function(gradData,
         )) / para["xi"])
     }
   } else if (!integratedHazard) {
-    hazardFuncGomp <- HAZARD_FUNCTIONS$gompertzFunc
+    hazardFunc <- HAZARD_FUNCTIONS$gompertzFunc
     hazardFuncGPD <- function(para, ages) {
       1 / (exp(-para["alpha"] - para["beta"] * thresholdAge) + para["xi"] * (ages - thresholdAge))
     }
@@ -1248,7 +1426,7 @@ graduateGompertzGPD <- function(gradData,
   logLikeFunc <- function(para) {
     muGomp <-
       pmax(optimControl$minimumMu,
-           hazardFuncGomp(para = para, ages = agesB))
+           hazardFunc(para = para, ages = agesB))
     muGPD <-
       pmax(optimControl$minimumMu,
            hazardFuncGPD(para = para, ages = agesA))
@@ -1286,7 +1464,7 @@ graduateGompertzGPD <- function(gradData,
     numDeriv::hessian(logLikeFunc, gradResults$par, method = optimControl$gradMethod)
   
   rates <- c(
-    hazardFuncGomp(para = gradResults$par, ages = agesB),
+    hazardFunc(para = gradResults$par, ages = agesB),
     hazardFuncGPD(para = gradResults$par, ages = agesA)
   )
   
@@ -1295,7 +1473,8 @@ graduateGompertzGPD <- function(gradData,
       gradData = gradData,
       gradResults = gradResults,
       hessian = calcHessian,
-      gradFunc = list(hazardFuncGomp, hazardFuncGPD),
+      gradFunc = list(hazardFunc = hazardFunc, hazardFuncGPD = hazardFuncGPD),
+      thresholdAge = thresholdAge,
       rates = rates
     )
   
@@ -1356,19 +1535,19 @@ graduateMakehamGPD <- function(gradData,
   
   # Choose hazard function
   if (integratedHazard) {
-    hazardFuncMakeham <- INTEGRATED_HAZARD_FUNCTIONS$makehamFunc
+    hazardFunc <- INTEGRATED_HAZARD_FUNCTIONS$makehamFunc
     hazardFuncGPD <- function(para, ages) {
       (log(abs(
-        para["xi"] * (ages + 1 - thresholdAge) + exp(-para["alpha"] - para["beta"] * thresholdAge)
+        para["xi"] * (ages + 1 - thresholdAge) + 1/(exp(para["epsilon"]) + exp(para["alpha"] + para["beta"] * thresholdAge))
       )) / para["xi"]) -
         (log(abs(
-          para["xi"] * (ages - thresholdAge) + exp(-para["alpha"] - para["beta"] * thresholdAge)
+          para["xi"] * (ages - thresholdAge) + 1/(exp(para["epsilon"]) + exp(para["alpha"] + para["beta"] * thresholdAge))
         )) / para["xi"])
     }
   } else if (!integratedHazard) {
-    hazardFuncMakeham <- HAZARD_FUNCTIONS$makehamFunc
+    hazardFunc <- HAZARD_FUNCTIONS$makehamFunc
     hazardFuncGPD <- function(para, ages) {
-      1 / (exp(-para["alpha"] - para["beta"] * thresholdAge) + para["xi"] * (ages - thresholdAge))
+      1 / (1/(exp(para["epsilon"]) + exp(para["alpha"] + para["beta"] * thresholdAge)) + para["xi"] * (ages - thresholdAge))
     }
   }
   
@@ -1377,7 +1556,7 @@ graduateMakehamGPD <- function(gradData,
   logLikeFunc <- function(para) {
     muGomp <-
       pmax(optimControl$minimumMu,
-           hazardFuncMakeham(para = para, ages = agesB))
+           hazardFunc(para = para, ages = agesB))
     muGPD <-
       pmax(optimControl$minimumMu,
            hazardFuncGPD(para = para, ages = agesA))
@@ -1415,7 +1594,7 @@ graduateMakehamGPD <- function(gradData,
     numDeriv::hessian(logLikeFunc, gradResults$par, method = optimControl$gradMethod)
   
   rates <- c(
-    hazardFuncMakeham(para = gradResults$par, ages = agesB),
+    hazardFunc(para = gradResults$par, ages = agesB),
     hazardFuncGPD(para = gradResults$par, ages = agesA)
   )
   
@@ -1424,7 +1603,7 @@ graduateMakehamGPD <- function(gradData,
       gradData = gradData,
       gradResults = gradResults,
       hessian = calcHessian,
-      gradFunc = list(hazardFuncMakeham, hazardFuncGPD),
+      gradFunc = list(hazardFunc = hazardFunc, hazardFuncGPD = hazardFuncGPD),
       thresholdAge = thresholdAge,
       rates = rates
     )
