@@ -239,8 +239,8 @@ createGradAnalysis <- function(resultList) {
   
   # if(length(mod) == 1) mod <- rep(mod, length(obs))
   
-  plottingData <- data.frame(Age = ages, upper, lower, obs, mod)
-  residualData <- data.frame(Age = ages, devRes, stRes)
+  plottingData <- data.frame(Age = ages, upper, lower, obs, mod, model = resultList$gradFunc$name)
+  residualData <- data.frame(Age = ages, devRes, stRes, model = resultList$gradFunc$name)
   
   FinalOutput <-
     list(
@@ -389,8 +389,8 @@ applyFittedCLAModelOnData <- function(resultList, newData, analysis = TRUE) {
   
   # if(length(mod) == 1) mod <- rep(mod, length(obs))
   
-  plottingData <- data.frame(Age = ages, upper, lower, obs, mod)
-  residualData <- data.frame(Age = ages, devRes, stRes)
+  plottingData <- data.frame(Age = ages, upper, lower, obs, mod, model = resultList$gradFunc$name)
+  residualData <- data.frame(Age = ages, devRes, stRes, model = resultList$gradFunc$name)
   
   FinalOutput <-
     list(
@@ -410,7 +410,7 @@ applyFittedCLAModelOnData <- function(resultList, newData, analysis = TRUE) {
 }
 
 calculateRatesCLAModel <- function(resultList, ages) {
-  return(resultList$gradFunc(unlist(resultList$gradResults$par), ages))
+  return(resultList$gradFunc$func(unlist(resultList$gradResults$par), ages))
 }
 
 
@@ -543,8 +543,8 @@ applyFittedEVTModelOnData <- function(resultList, newData, analysis = TRUE) {
   
   # if(length(mod) == 1) mod <- rep(mod, length(obs))
   
-  plottingData <- data.frame(Age = ages, upper, lower, obs, mod)
-  residualData <- data.frame(Age = ages, devRes, stRes)
+  plottingData <- data.frame(Age = ages, upper, lower, obs, mod, model = resultList$gradFunc$name)
+  residualData <- data.frame(Age = ages, devRes, stRes, model = resultList$gradFunc$name)
   
   FinalOutput <-
     list(
@@ -708,7 +708,7 @@ graduateGompertz <- function(gradData,
       gradData = gradData,
       gradResults = gradResults,
       hessian = calcHessian,
-      gradFunc = hazardFunc,
+      gradFunc = list(name = "Gompertz", func = hazardFunc),
       rates = rates
     )
   
@@ -808,7 +808,7 @@ graduateMakeham <- function(gradData,
       gradData = gradData,
       gradResults = gradResults,
       hessian = calcHessian,
-      gradFunc = hazardFunc,
+      gradFunc = list(name = "Makeham", func = hazardFunc),
       rates = rates
     )
   
@@ -891,7 +891,7 @@ graduatePerks <- function(gradData,
       gradData = gradData,
       gradResults = gradResults,
       hessian = calcHessian,
-      gradFunc = hazardFunc,
+      gradFunc = list(name = "Perks", func = hazardFunc),
       rates = rates
     )
   
@@ -986,7 +986,7 @@ graduateBeard <- function(gradData,
       gradData = gradData,
       gradResults = gradResults,
       hessian = calcHessian,
-      gradFunc = hazardFunc,
+      gradFunc = list(name = "Beard", func = hazardFunc),
       rates = rates
     )
   
@@ -1087,7 +1087,7 @@ graduateMakehamPerks <- function(gradData,
       gradData = gradData,
       gradResults = gradResults,
       hessian = calcHessian,
-      gradFunc = hazardFunc,
+      gradFunc = list(name = "MakehamPerks", func = hazardFunc),
       rates = rates
     )
   
@@ -1191,7 +1191,7 @@ graduateMakehamBeard <- function(gradData,
       gradData = gradData,
       gradResults = gradResults,
       hessian = calcHessian,
-      gradFunc = hazardFunc,
+      gradFunc = list(name = "MakehamBeard", func = hazardFunc),
       rates = rates
     )
   
@@ -1346,7 +1346,7 @@ graduateHermite <- function(gradData,
       modelSpecifications = list(type = type, X0 = X0, X1 = X1),
       gradResults = gradResults,
       hessian = calcHessian,
-      gradFunc = hermiteMu,
+      gradFunc = list(name = paste("Hermite ", type), func = hermiteMu),
       rates = rates
     )
   
@@ -1473,7 +1473,7 @@ graduateGompertzGPD <- function(gradData,
       gradData = gradData,
       gradResults = gradResults,
       hessian = calcHessian,
-      gradFunc = list(hazardFunc = hazardFunc, hazardFuncGPD = hazardFuncGPD),
+      gradFunc = list(name = "GompertzGPD", hazardFunc = hazardFunc, hazardFuncGPD = hazardFuncGPD),
       thresholdAge = thresholdAge,
       rates = rates
     )
@@ -1603,7 +1603,7 @@ graduateMakehamGPD <- function(gradData,
       gradData = gradData,
       gradResults = gradResults,
       hessian = calcHessian,
-      gradFunc = list(hazardFunc = hazardFunc, hazardFuncGPD = hazardFuncGPD),
+      gradFunc = list(name = "MakehamGPD", hazardFunc = hazardFunc, hazardFuncGPD = hazardFuncGPD),
       thresholdAge = thresholdAge,
       rates = rates
     )
