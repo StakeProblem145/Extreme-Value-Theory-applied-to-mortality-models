@@ -414,6 +414,163 @@ calculateRatesCLAModel <- function(resultList, ages) {
 }
 
 
+applyFittedHMTModelOnData <- function(resultList, newData, analysis = TRUE) {
+  # Required packages
+  require(dplyr)
+  
+  hessian <- resultList$hessian
+  
+  # Make sure data is in the right order and extract Vectors
+  gradData <- newData %>%
+    arrange(.data$Age)
+  
+  ages <- gradData$Age
+  decs <- gradData$Deaths
+  exps <- gradData$Exposure
+  
+  rates <- calculateRatesHermiteModel(resultList, ages)
+  # Plot data crude versus fitted central mortality Rates
+  obs <- log(decs / exps)
+  mod <- log(rates)
+  
+  if(!analysis) {
+    plottingData <- data.frame(Age = ages, obs, mod)
+    return(
+      list(
+        gradData = gradData,
+        plottingData = plottingData
+      )
+    )
+  }
+  
+  logLike <- resultList$gradResults$value
+  fittedParameters <- resultList$gradResults$par
+  nPars <- length(fittedParameters)
+  
+  # Analysis
+  paraSD <- tryCatch({
+    sqrt(diag(solve(-resultList$hessian, tol = 1e-20)))
+  },
+  error = function(con) {
+    print("No inverse of Hessian calculated")
+    print(con)
+    return(NULL)
+  })
+  
+  ZScore <- if (!is.null(paraSD)) {
+    fittedParameters / paraSD
+  } else {
+    NULL
+  }
+  
+  pVal <- if (!is.null(ZScore)) {
+    2 * pnorm(abs(ZScore), 0, 1, lower.tail = FALSE)
+  } else {
+    NULL
+  }
+  
+  # Calculate deviance and residuals
+  A <- decs
+  E <- rates * exps
+  dev <- sum(2 * (ifelse(A == 0, 0, A * log(A / E)) - (A - E)))
+  devRes <-
+    sign(A - E) * sqrt(2 * (ifelse(A == 0, 0, A * log(A / E)) - (A - E)))
+  stRes <- (A - E) / sqrt(E)
+  
+  # Determine dispersion coefficient
+  dis <- dev / (length(ages) - nPars)
+  
+  # Chi-squared calculations
+  chi <- sum(((A - E) ^ 2) / ifelse(E == 0, 1, E))
+  chiP <- pchisq(chi, df = length(ages) - nPars, lower.tail = FALSE)
+  
+  # Information criteria
+  AIC <- -2 * logLike + 2 * nPars
+  BIC <- -2 * logLike + log(length(ages)) * nPars
+  
+  # Signs test
+  if (!any(is.na(devRes))) {
+    signsP <- sum(devRes > 0)
+    signsN <- sum(devRes < 0)
+    signsA <- if (signsP <= signsN) {
+      "less"
+    } else {
+      "greater"
+    }
+    signsTest <- binom.test(signsP, signsP + signsN,
+                            alternative = signsA)$p.value
+  } else {
+    signsP <- NULL
+    signsN <- NULL
+    signsTest <- NULL
+  }
+  
+  
+  # Runs test
+  runs <- length(rle(sign(devRes))$lengths)
+  runsP <-
+    randtests::runs.test(devRes, "left.sided", 0, "exact", FALSE)$p.value
+  
+  # Calculate 95% confidence intervals
+  lower <- log(qpois(0.025, A) / exps)
+  upper <- log(qpois(0.975, A) / exps)
+  
+  modelResults <-
+    list(
+      Parameters = split(unname(fittedParameters), names(fittedParameters)),
+      SD = if (!is.null(paraSD)) {
+        split(unname(paraSD), names(fittedParameters))
+      },
+      Hessian = resultList$hessian,
+      ZStat = if (!is.null(paraSD)) {
+        split(unname(ZScore), names(fittedParameters))
+      },
+      PVals = if (!is.null(paraSD)) {
+        split(unname(pVal), names(fittedParameters))
+      },
+      LogLikelihood = logLike,
+      AIC = AIC,
+      BIC = BIC,
+      dis = dis,
+      chi = chi,
+      chiP = chiP,
+      signsP = signsP,
+      signsN = signsN,
+      signsTest = signsTest,
+      runs = runs,
+      runsP = runsP
+    )
+  
+  # if(length(mod) == 1) mod <- rep(mod, length(obs))
+  
+  plottingData <- data.frame(Age = ages, upper, lower, obs, mod, model = resultList$gradFunc$name)
+  residualData <- data.frame(Age = ages, devRes, stRes, model = resultList$gradFunc$name)
+  
+  FinalOutput <-
+    list(
+      gradData,
+      modelResults,
+      plottingData,
+      residualData,
+      gradFunc = resultList$gradFunc
+    )
+  names(FinalOutput) <-
+    c("gradData",
+      "modelResults",
+      "plottingData",
+      "residualData",
+      "gradFunc")
+  return(FinalOutput)
+}
+
+calculateRatesHermiteModel <- function(resultList, ages) {
+  par <- rep(0, times = 5)
+  names(par) <- c("hermiteAlpha", "hermiteOmega", "hermiteM0", "hermiteM1", "hermiteV")
+  par <- replace(par, names(resultList$gradResults$par), resultList$gradResults$par)
+  return(resultList$gradFunc$func(unlist(par), ages))
+}
+
+
 applyFittedEVTModelOnData <- function(resultList, newData, analysis = TRUE) {
   # Required packages
   require(dplyr)
@@ -1283,19 +1440,19 @@ graduateHermite <- function(gradData,
   
   pH <- function(para) {
     if (type == "I") {
-      return(c(para, 0, 0, 0))
+      return(c(para["hermiteAlpha"], para["hermiteOmega"], hermiteM0 = 0, hermiteM1 = 0, hermiteV = 0))
     }
     if (type == "II") {
-      return(c(para, 0, 0))
+      return(c(para["hermiteAlpha"], para["hermiteOmega"], para["hermiteM0"], hermiteM1 = 0, hermiteV = 0))
     }
     if (type == "III") {
-      return(c(para[1:2], 0, para[3], 0))
+      return(c(para["hermiteAlpha"], para["hermiteOmega"], hermiteM0 = 0, para["hermiteM1"], hermiteV = 0))
     }
     if (type == "IV") {
-      return(c(para, 0))
+      return(c(para["hermiteAlpha"], para["hermiteOmega"], para["hermiteM0"], para["hermiteM1"], hermiteV = 0))
     }
     if (type == "V") {
-      return(c(para[1:3], 0, para[4]))
+      return(c(para["hermiteAlpha"], para["hermiteOmega"], para["hermiteM0"], hermiteM1 = 0, para["hermiteV"]))
     }
     return(para)
   }
@@ -1303,9 +1460,9 @@ graduateHermite <- function(gradData,
   
   hermiteMu <- function(para, x) {
     return(exp(
-      para[1] * h00x(x, X0, X1) + para[2] * h01x(x, X0, X1) +
-        para[3] * h10x(x, X0, X1) + para[4] * h11x(x, X0, X1) +
-        para[5] * hQuarticx(x, X0, X1)
+      para["hermiteAlpha"] * h00x(x, X0, X1) + para["hermiteOmega"] * h01x(x, X0, X1) +
+        para["hermiteM0"] * h10x(x, X0, X1) + para["hermiteM1"] * h11x(x, X0, X1) +
+        para["hermiteV"] * hQuarticx(x, X0, X1)
     ))
   }
   
@@ -1346,7 +1503,7 @@ graduateHermite <- function(gradData,
       modelSpecifications = list(type = type, X0 = X0, X1 = X1),
       gradResults = gradResults,
       hessian = calcHessian,
-      gradFunc = list(name = paste("Hermite ", type), func = hermiteMu),
+      gradFunc = list(name = paste("Hermite", type), func = hermiteMu),
       rates = rates
     )
   
