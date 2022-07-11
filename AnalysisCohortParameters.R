@@ -311,115 +311,103 @@ fullResultListTable <- data.frame("MakehamGPD" = MakehamGPDResult$AIC,
 # }
 
 
-# PARAMETER <- "Alpha"
-# title <- paste(unique(MakehamBeardParameters$Model), PARAMETER, COHORT, LAND, GENDER)
-# plot <- plotParameter(MakehamBeardParameters, PARAMETER, title = title, save = TRUE)
-# plot
-# 
-# PARAMETER <- "Beta"
-# title <- paste(unique(MakehamBeardParameters$Model), PARAMETER, COHORT, LAND, GENDER)
-# plot <- plotParameter(MakehamBeardParameters, PARAMETER, title = title, save = TRUE)
-# plot
-# 
-# PARAMETER <- "Epsilon"
-# title <- paste(unique(MakehamBeardParameters$Model), PARAMETER, COHORT, LAND, GENDER)
-# plot <- plotParameter(MakehamBeardParameters, PARAMETER, title = title, save = TRUE)
-# plot
-# 
-# PARAMETER <- "Rho"
-# title <- paste(unique(MakehamBeardParameters$Model), PARAMETER, COHORT, LAND, GENDER)
-# plot <- plotParameter(MakehamBeardParameters, PARAMETER, title = title, save = TRUE)
-# plot
-# 
-# 
-# 
-# PARAMETER <- "hermiteAlpha"
-# title <- paste(unique(HermiteIIParameter$Model), PARAMETER, COHORT, LAND, GENDER)
-# plot <- plotParameter(HermiteIIParameter, PARAMETER, title = title, save = TRUE)
-# plot
-# 
-# PARAMETER <- "hermiteM0"
-# title <- paste(unique(HermiteIIParameter$Model), PARAMETER, COHORT, LAND, GENDER)
-# plot <- plotParameter(HermiteIIParameter, PARAMETER, title = title, save = TRUE)
-# plot
-# 
-# PARAMETER <- "hermiteOmega"
-# title <- paste(unique(HermiteIIParameter$Model), PARAMETER, COHORT, LAND, GENDER)
-# plot <- plotParameter(HermiteIIParameter, PARAMETER, title = title, save = TRUE)
-# plot
-# 
-# 
-# 
-# PARAMETER <- "Alpha"
-# title <- paste(unique(MakehamGPDParameter$Model), PARAMETER, COHORT, LAND, GENDER)
-# plot <- plotParameter(MakehamGPDParameter, PARAMETER, title = title, save = TRUE)
-# plot
-# 
-# PARAMETER <- "Beta"
-# title <- paste(unique(MakehamGPDParameter$Model), PARAMETER, COHORT, LAND, GENDER)
-# plot <- plotParameter(MakehamGPDParameter, PARAMETER, title = title, save = TRUE)
-# plot
-# 
-# PARAMETER <- "Epsilon"
-# title <- paste(unique(MakehamGPDParameter$Model), PARAMETER, COHORT, LAND, GENDER)
-# plot <- plotParameter(MakehamGPDParameter, PARAMETER, title = title, save = TRUE)
-# plot
-# 
-# PARAMETER <- "Xi"
-# title <- paste(unique(MakehamGPDParameter$Model), PARAMETER, COHORT, LAND, GENDER)
-# plot <- plotParameter(MakehamGPDParameter, PARAMETER, title = title, save = TRUE)
-# plot
-# 
-# 
-# 
-# 
-# PARAMETER <- "hermiteAlpha"
-# title <- paste(unique(HermiteVParameter$Model), PARAMETER, COHORT, LAND, GENDER)
-# plot <- plotParameter(HermiteVParameter, PARAMETER, title = title, save = TRUE)
-# plot
-# 
-# PARAMETER <- "hermiteM0"
-# title <- paste(unique(HermiteVParameter$Model), PARAMETER, COHORT, LAND, GENDER)
-# plot <- plotParameter(HermiteVParameter, PARAMETER, title = title, save = TRUE)
-# plot
-# 
-# PARAMETER <- "hermiteOmega"
-# title <- paste(unique(HermiteVParameter$Model), PARAMETER, COHORT, LAND, GENDER)
-# plot <- plotParameter(HermiteVParameter, PARAMETER, title = title, save = TRUE)
-# plot
-# 
-# PARAMETER <- "hermiteV"
-# title <- paste(unique(HermiteVParameter$Model), PARAMETER, COHORT, LAND, GENDER)
-# plot <- plotParameter(HermiteVParameter, PARAMETER, title = title, save = TRUE)
-# plot
+PARAMETER <- "Alpha"
+title <- paste(unique(MakehamBeardParameters$Model), PARAMETER, COHORT, LAND, GENDER)
+plot <- plotParameter(MakehamBeardParameters, PARAMETER, title = title)
+plot
+
+PARAMETER <- "Beta"
+title <- paste(unique(MakehamBeardParameters$Model), PARAMETER, COHORT, LAND, GENDER)
+plot <- plotParameter(MakehamBeardParameters, PARAMETER, title = title)
+plot
+
+PARAMETER <- "Epsilon"
+title <- paste(unique(MakehamBeardParameters$Model), PARAMETER, COHORT, LAND, GENDER)
+plot <- plotParameter(MakehamBeardParameters, PARAMETER, title = title)
+plot
+
+PARAMETER <- "Rho"
+title <- paste(unique(MakehamBeardParameters$Model), PARAMETER, COHORT, LAND, GENDER)
+plot <- plotParameter(MakehamBeardParameters, PARAMETER, title = title)
+plot
+
+
+
+PARAMETER <- "hermiteAlpha"
+title <- paste(unique(HermiteIIParameter$Model), PARAMETER, COHORT, LAND, GENDER)
+plot <- plotParameter(HermiteIIParameter, PARAMETER, title = title)
+plot
+
+PARAMETER <- "hermiteM0"
+title <- paste(unique(HermiteIIParameter$Model), PARAMETER, COHORT, LAND, GENDER)
+plot <- plotParameter(HermiteIIParameter, PARAMETER, title = title)
+plot
+
+PARAMETER <- "hermiteOmega"
+title <- paste(unique(HermiteIIParameter$Model), PARAMETER, COHORT, LAND, GENDER)
+plot <- plotParameter(HermiteIIParameter, PARAMETER, title = title)
+plot
+
+
+
+PARAMETER <- "Alpha"
+title <- paste(unique(MakehamGPDParameter$Model), PARAMETER, COHORT, LAND, GENDER)
+plot <- plotParameter(MakehamGPDParameter, PARAMETER, title = title)
+plot
+
+PARAMETER <- "Beta"
+title <- paste(unique(MakehamGPDParameter$Model), PARAMETER, COHORT, LAND, GENDER)
+plot <- plotParameter(MakehamGPDParameter, PARAMETER, title = title)
+plot
+
+PARAMETER <- "Epsilon"
+title <- paste(unique(MakehamGPDParameter$Model), PARAMETER, COHORT, LAND, GENDER)
+plot <- plotParameter(MakehamGPDParameter, PARAMETER, title = title)
+plot
+
+PARAMETER <- "Xi"
+title <- paste(unique(MakehamGPDParameter$Model), PARAMETER, COHORT, LAND, GENDER)
+plot <- plotParameter(MakehamGPDParameter, PARAMETER, title = title)
+plot
 
 
 
 
+PARAMETER <- "hermiteAlpha"
+title <- paste(unique(HermiteVParameter$Model), PARAMETER, COHORT, LAND, GENDER)
+plot <- plotParameter(HermiteVParameter, PARAMETER, title = title)
+plot
 
+PARAMETER <- "hermiteM0"
+title <- paste(unique(HermiteVParameter$Model), PARAMETER, COHORT, LAND, GENDER)
+plot <- plotParameter(HermiteVParameter, PARAMETER, title = title)
+plot
 
+PARAMETER <- "hermiteOmega"
+title <- paste(unique(HermiteVParameter$Model), PARAMETER, COHORT, LAND, GENDER)
+plot <- plotParameter(HermiteVParameter, PARAMETER, title = title)
+plot
+
+PARAMETER <- "hermiteV"
+title <- paste(unique(HermiteVParameter$Model), PARAMETER, COHORT, LAND, GENDER)
+plot <- plotParameter(HermiteVParameter, PARAMETER, title = title)
+plot
 
 
 
 
 ##### STLT AICs #####
-# GompertzGPDResult <- data.frame(Model = character(0),
-#                                AIC = numeric(0))
-# 
-# for(cohort in c(cohortMin:cohortMax)){
-#   df104 <- hmdDfMaxAge104 %>%
-#     filter(Cohort == cohort & Gender == GENDER)
-#   GompertzGPD104 <- graduateGompertzGPD(df104, thresholdAge = thresholdAge, analysis = FALSE)
-#   GompertzGPD104Analysis <- createGradAnalysis(GompertzGPD104)
-#   
-#   GompertzGPDResult <- GompertzGPDResult %>%
-#     add_row(tibble_row(
-#       Model = "STLT",
-#       AIC = GompertzGPD104Analysis$modelResults$AIC))
-# }
-# 
-# 
-# 
-# 
-# GompertzGPDResult
-# MakehamGPDResult
+GompertzGPDResult <- data.frame(Model = character(0),
+                               AIC = numeric(0))
+
+for(cohort in c(cohortMin:cohortMax)){
+  df104 <- hmdDfMaxAge104 %>%
+    filter(Cohort == cohort & Gender == GENDER)
+  GompertzGPD104 <- graduateGompertzGPD(df104, thresholdAge = thresholdAge, analysis = FALSE)
+  GompertzGPD104Analysis <- createGradAnalysis(GompertzGPD104)
+
+  GompertzGPDResult <- GompertzGPDResult %>%
+    add_row(tibble_row(
+      Model = "STLT",
+      AIC = GompertzGPD104Analysis$modelResults$AIC))
+}

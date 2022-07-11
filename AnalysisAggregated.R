@@ -337,8 +337,8 @@ AggregatedPatchworkRes <- resMakehamBeard109 + resHermiteII109 + resMakehamGPD10
 
 title <- paste(LAND, "Aggregated", GENDER, "Patchwork.png", sep = "")
 titleRes <- paste(LAND, "Aggregated", GENDER, "PatchworkRes.png", sep = "")
-ggsave(title, plot = AggregatedPatchwork, width = 30, height = 20, units = "cm", path = "plots")
-ggsave(titleRes, plot = AggregatedPatchworkRes, width = 30, height = 20, units = "cm", path = "plots")
+# ggsave(title, plot = AggregatedPatchwork, width = 30, height = 20, units = "cm", path = "plots")
+# ggsave(titleRes, plot = AggregatedPatchworkRes, width = 30, height = 20, units = "cm", path = "plots")
 
 
 
