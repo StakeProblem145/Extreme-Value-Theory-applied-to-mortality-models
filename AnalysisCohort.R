@@ -4,9 +4,19 @@ library(patchwork)
 source("graduatePoisson.R")
 source("PlottingFunctions.R")
 source("helperFunctions.R")
+source("ExtrapolateFit.R")
 
 load("data/Canada_HMD_df.Rda")
 load("data/Sweden_Df_Year.Rda")
+load("data/CPP_QPP.Rda")
+
+CPP_df <- CPP_df %>%
+  mutate(Cohort = Year - Age) %>%
+  filter(Exposure > 0 | Deaths > 0)
+
+QPP_df <- QPP_df %>%
+  mutate(Cohort = Year - Age) %>%
+  filter(Exposure > 0 | Deaths > 0)
 
 #### Prep ####
 ##### Data #####
@@ -21,6 +31,7 @@ if(LAND == "Canada") {
   # Valid Cohort for Sweden 1900 to 1911
   DF <- Sweden_Df
 }
+
 
 # In general Age above 70
 minAge <- 70
@@ -101,6 +112,8 @@ MakehamBeardModel104Analysis$modelResults$AIC
 MakehamBeardModel109Analysis <-
   applyFittedCLAModelOnData(MakehamBeardModel104, df109)
 MakehamBeardModel109Analysis <-
+  extrapolateAnalysisFrom109(MakehamBeardModel109Analysis)
+MakehamBeardModel109Analysis <-
   addFittedColumnTo109(MakehamBeardModel109Analysis)
 
 
@@ -138,6 +151,8 @@ hermiteII104Analysis$modelResults$AIC
 
 hermiteII109Analysis <-
   applyFittedHMTModelOnData(hermiteII104, df109)
+hermiteII109Analysis <-
+  extrapolateAnalysisFrom109(hermiteII109Analysis)
 hermiteII109Analysis <- addFittedColumnTo109(hermiteII109Analysis)
 
 title <- paste(
@@ -154,6 +169,12 @@ plotHermiteII109 <- plotLogMortalitySplitData(
   title = title
 )
 plotHermiteII109
+plotHermiteII109Extra <- plotLogMortalitySplitData(
+  hermiteII109Analysis$extrapolatedData,
+  xlim = c(70, 125),
+  title = title
+)
+plotHermiteII109Extra
 resHermiteII109 <- plotResMortality(
   hermiteII109Analysis,
   ylim = 2,
@@ -190,6 +211,8 @@ GompertzGPD104Analysis$modelResults$AIC
 
 GompertzGPD109Analysis <-
   applyFittedEVTModelOnData(GompertzGPD104, df109)
+GompertzGPD109Analysis <-
+  extrapolateAnalysisFrom109(GompertzGPD109Analysis)
 GompertzGPD109Analysis <-
   addFittedColumnTo109(GompertzGPD109Analysis)
 
@@ -242,6 +265,8 @@ MakehamGPD104Analysis$modelResults$AIC
 
 MakehamGPD109Analysis <-
   applyFittedEVTModelOnData(MakehamGPD104, df109)
+MakehamGPD109Analysis <-
+  extrapolateAnalysisFrom109(MakehamGPD109Analysis)
 MakehamGPD109Analysis <- addFittedColumnTo109(MakehamGPD109Analysis)
 
 title <- paste(
@@ -258,6 +283,13 @@ plotMakehamGPD109 <- plotLogMortalitySplitData(
   title = title
 )
 plotMakehamGPD109
+plotMakehamGPD109Extra <- plotLogMortalitySplitData(
+  MakehamGPD109Analysis$extrapolatedData,
+  xlim = c(70, 125),
+  ylim = c(-4.5, 2.5),
+  title = title
+)
+plotMakehamGPD109Extra
 resMakehamGPD109 <- plotResMortality(
   MakehamGPD109Analysis,
   ylim = 2,
@@ -284,6 +316,8 @@ hermiteV104Analysis$modelResults$AIC
 # )
 
 hermiteV109Analysis <- applyFittedHMTModelOnData(hermiteV104, df109)
+hermiteV109Analysis <-
+  extrapolateAnalysisFrom109(hermiteV109Analysis)
 hermiteV109Analysis <- addFittedColumnTo109(hermiteV109Analysis)
 
 title <- paste(
@@ -320,6 +354,24 @@ title <- paste(
 )
 plotLogMortalitySplitData(
   megaPlot,
+  title = title,
+  hideLegend = FALSE
+)
+
+megaPlotExtra <- bind_rows(MakehamBeardModel109Analysis$extrapolatedData,
+                      hermiteII109Analysis$extrapolatedData,
+                      MakehamGPD109Analysis$extrapolatedData,
+                      hermiteV109Analysis$extrapolatedData)
+maxAgeExtrapol <- 125
+title <- paste(
+  "Models", COHORT, GENDER,
+  "and Extrapolation to",
+  maxAgeExtrapol
+)
+plotLogMortalitySplitData(
+  megaPlotExtra,
+  xlim = c(70, 125),
+  ylim = c(-4.5, 2.5),
   title = title,
   hideLegend = FALSE
 )

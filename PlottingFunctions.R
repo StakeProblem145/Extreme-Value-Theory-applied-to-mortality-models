@@ -106,7 +106,57 @@ plotLogMortalitySplitData <-
     plot
   }
 
+plotLogMortalityExtrapolatedSplitData <-
+  function(dataset,
+           title = "MISSING TITLE",
+           xlim = c(70, 110),
+           ylim = c(-4.5, 0.5),
+           hideLegend = TRUE,
+           save = FALSE,
+           errorBar = TRUE) {
+    if(is.null(dataset$extrapolatedData)) {
+      W <- dataset
+    } else {
+      W <- dataset$extrapolatedData
+    }
+    A <- filter(W, fitted == "Fit")
+    B <- filter(W, fitted == "Extrapolation")
+    plot <- ggplot() +
+      geom_point(aes(x = W$Age, y = W$obs), alpha = 1 / 5) +
+      geom_line(aes(x = B$Age, y = B$mod, colour = B$model), linetype = "dashed", lwd=1) +
+      geom_line(aes(x = A$Age, y = A$mod, colour = A$model), lwd=1) +
+      xlim(xlim) +
+      ylim(ylim) +
+      #geom_col(width=0.8)+
+      ggtitle(paste(title)) +
+      xlab("Age") +
+      ylab("Log Mortality") +
+      labs(color = "Model") +
+      theme_clean() +
+      MODEL_PLOT_THEME
 
+    if(errorBar){
+      plot <- plot +
+        geom_errorbar(aes(x = A$Age, y = A$mod, ymin = A$lower, ymax = A$upper)
+          , width=.3, alpha = 1/2) +
+        geom_errorbar(aes(x = B$Age, y = B$mod, ymin = B$lower, ymax = B$upper)
+          , width=.3, alpha = 1/2)
+    }
+
+
+    if(hideLegend) {
+      plot <- plot +
+        theme(legend.position="none")
+    }
+
+    if(save) {
+      title <- gsub(" ", "", title, fixed = TRUE)
+      plotname <- paste(title, ".png", sep = "")
+      ggsave(plotname, plot = plot, width = 30, height = 20, units = "cm", path = "plots")
+    }
+
+    plot
+  }
 
 plotResMortality <-
   function(dataset,

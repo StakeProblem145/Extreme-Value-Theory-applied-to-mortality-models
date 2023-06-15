@@ -248,14 +248,16 @@ createGradAnalysis <- function(resultList) {
       modelResults,
       plottingData,
       residualData,
-      gradFunc = resultList$gradFunc
+      gradFunc = resultList$gradFunc,
+      resultList
     )
   names(FinalOutput) <-
     c("gradData",
       "modelResults",
       "plottingData",
       "residualData",
-      "gradFunc")
+      "gradFunc",
+      "resultList")
   return(FinalOutput)
 }
 
@@ -398,14 +400,16 @@ applyFittedCLAModelOnData <- function(resultList, newData, analysis = TRUE) {
       modelResults,
       plottingData,
       residualData,
-      gradFunc = resultList$gradFunc
+      gradFunc = resultList$gradFunc,
+      resultList
     )
   names(FinalOutput) <-
     c("gradData",
       "modelResults",
       "plottingData",
       "residualData",
-      "gradFunc")
+      "gradFunc",
+      "resultList")
   return(FinalOutput)
 }
 
@@ -552,14 +556,16 @@ applyFittedHMTModelOnData <- function(resultList, newData, analysis = TRUE) {
       modelResults,
       plottingData,
       residualData,
-      gradFunc = resultList$gradFunc
+      gradFunc = resultList$gradFunc,
+      resultList
     )
   names(FinalOutput) <-
     c("gradData",
       "modelResults",
       "plottingData",
       "residualData",
-      "gradFunc")
+      "gradFunc",
+    "resultList")
   return(FinalOutput)
 }
 
@@ -709,14 +715,16 @@ applyFittedEVTModelOnData <- function(resultList, newData, analysis = TRUE) {
       modelResults,
       plottingData,
       residualData,
-      gradFunc = resultList$gradFunc
+      gradFunc = resultList$gradFunc,
+      resultList
     )
   names(FinalOutput) <-
     c("gradData",
       "modelResults",
       "plottingData",
       "residualData",
-      "gradFunc")
+      "gradFunc",
+    "resultList")
   return(FinalOutput)
 }
 

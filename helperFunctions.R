@@ -83,6 +83,17 @@ addFittedColumnTo109 <- function(analysisData) {
   B <- bind_rows(dup, B)
   B$fitted <- "Extrapolation"
   analysisData$residualData <- bind_rows(A, B)
+
+  if("extrapolatedData" %in% names(analysisData)){
+    temp <- analysisData$extrapolatedData %>%
+      mutate(fitted = if_else(Age <= 104, "Fit", "Extrapolation"))
+    A <- filter(temp, fitted == "Fit")
+    dup <- slice_tail(A, n = 1)
+    B <- filter(temp, fitted == "Extrapolation")
+    B <- bind_rows(dup, B)
+    B$fitted <- "Extrapolation"
+    analysisData$extrapolatedData <- bind_rows(A, B)
+  }
   
   return(analysisData)
 }
