@@ -3,6 +3,8 @@ library(patchwork)
 
 source("graduatePoisson.R")
 source("PlottingFunctions.R")
+source("helperFunctions.R")
+source("ExtrapolateFit.R")
 
 load("data/Canada_HMD_df.Rda")
 
@@ -11,7 +13,7 @@ load("data/Canada_HMD_df.Rda")
 DF <- Canada_HMD_df
 
 minAge <- 60
-maxAge <- 104
+maxAge <- 109
 maxAgeExtra <- 109
 
 hmdDfMaxAge104 <- filter(DF, Age >= minAge & Age <= maxAge & Year <= 2020) %>%
@@ -72,13 +74,17 @@ GompertzModelAna <-
   createGradAnalysis(GompertzModel)
 GompertzModelAna$modelResults$AIC
 
+GompertzModelAna <-
+  extrapolateAnalysisFrom109(GompertzModelAna)
+GompertzModelAna <-
+  addFittedColumnTo109(GompertzModelAna, maxAge)
 
-title <- paste("Gompertz", COHORT, GENDER)
-GompertzPlot <- plotLogMortality(GompertzModelAna,
-                 xlim = c(60,110),
-                 ylim = c(-5, 0.5),
-                 title = title,
-                 errorBar = TRUE)
+
+title <- paste("Gompertz", LAND, COHORT, GENDER)
+GompertzPlot <- plotLogMortalitySplitData(GompertzModelAna$extrapolatedData,
+                                          xlim = c(70, 115),
+                                          title = title,
+                                          errorBar = TRUE)
 GompertzPlotRes <- plotResMortality(
   GompertzModelAna,
   xlim = c(60,110),
@@ -197,10 +203,15 @@ MakehamBeardModelAna <-
   createGradAnalysis(MakehamBeardModel)
 MakehamBeardModelAna$modelResults$AIC
 
+MakehamBeardModelAna <-
+  extrapolateAnalysisFrom109(MakehamBeardModelAna)
+MakehamBeardModelAna <-
+  addFittedColumnTo109(MakehamBeardModelAna, maxAge)
 
-title <- paste("Makeham Beard", COHORT, GENDER)
-MakehamBeardPlot <- plotLogMortality(MakehamBeardModelAna,
-                                     xlim = c(60,110),
+
+title <- paste("Makeham Beard", LAND, COHORT, GENDER)
+MakehamBeardPlot <- plotLogMortalitySplitData(MakehamBeardModelAna$extrapolatedData,
+                                     xlim = c(70, 115),
                  ylim = c(NA, 0.5),
                  title = title,
                  errorBar = TRUE)
@@ -288,8 +299,8 @@ HermitePolynoms <- ggplot() +
   geom_line(aes(x = x, y = h10, linetype = "h10")) +
   geom_line(aes(x = x, y = h11, linetype = "h11")) +
   geom_line(aes(x = x, y = hQuartic, linetype = "hQuartic")) +
-  ggtitle("Hermite Polynoms") +
-  labs(linetype='Hermite Polynom') +
+  ggtitle("Hermite Polynomials") +
+  labs(linetype='Hermite Polynomials') +
   theme_clean() +
   MODEL_PLOT_THEME
 
@@ -314,10 +325,15 @@ HermiteIIModelAna <-
   createGradAnalysis(HermiteIIModel)
 HermiteIIModelAna$modelResults$AIC
 
+HermiteIIModelAna <-
+  extrapolateAnalysisFrom109(HermiteIIModelAna)
+HermiteIIModelAna <-
+  addFittedColumnTo109(HermiteIIModelAna, maxAge)
 
-title <- paste("Hermite II", COHORT, GENDER)
-HermiteIIPlot <- plotLogMortality(HermiteIIModelAna,
-                                  xlim = c(60,110),
+
+title <- paste("Hermite II", LAND, COHORT, GENDER)
+HermiteIIPlot <- plotLogMortalitySplitData(HermiteIIModelAna$extrapolatedData,
+                                  xlim = c(70,115),
                                      ylim = c(NA, 0.5),
                                      title = title,
                                      errorBar = TRUE)
@@ -366,10 +382,15 @@ HermiteVModelAna <-
   createGradAnalysis(HermiteVModel)
 HermiteVModelAna$modelResults$AIC
 
+HermiteVModelAna <-
+  extrapolateAnalysisFrom109(HermiteVModelAna)
+HermiteVModelAna <-
+  addFittedColumnTo109(HermiteVModelAna, maxAge)
 
-title <- paste("Hermite V", COHORT, GENDER)
-HermiteVPlot <- plotLogMortality(HermiteVModelAna,
-                                 xlim = c(60,110),
+
+title <- paste("Hermite V", LAND, COHORT, GENDER)
+HermiteVPlot <- plotLogMortalitySplitData(HermiteVModelAna$extrapolatedData,
+                                 xlim = c(70,115),
                                   ylim = c(NA, 0.5),
                                   title = title,
                                   errorBar = TRUE)

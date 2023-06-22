@@ -22,7 +22,7 @@ QPP_df <- QPP_df %>%
 ##### Data #####
 LAND <- "Canada"
 GENDER <- "Female"
-COHORT <- 1900
+COHORT <- 1905
 
 if(LAND == "Canada") {
   # Valid Cohorts for Canada 1890 to 1910
@@ -114,7 +114,7 @@ MakehamBeardModel109Analysis <-
 MakehamBeardModel109Analysis <-
   extrapolateAnalysisFrom109(MakehamBeardModel109Analysis)
 MakehamBeardModel109Analysis <-
-  addFittedColumnTo109(MakehamBeardModel109Analysis)
+  addFittedColumnTo109(MakehamBeardModel109Analysis, maxAge)
 
 
 title <- paste("Makeham Beard", COHORT, GENDER, "and Extrapolation to", maxAgeExtra)
@@ -153,7 +153,7 @@ hermiteII109Analysis <-
   applyFittedHMTModelOnData(hermiteII104, df109)
 hermiteII109Analysis <-
   extrapolateAnalysisFrom109(hermiteII109Analysis)
-hermiteII109Analysis <- addFittedColumnTo109(hermiteII109Analysis)
+hermiteII109Analysis <- addFittedColumnTo109(hermiteII109Analysis, maxAge)
 
 title <- paste(
   "Hermite II",
@@ -214,7 +214,7 @@ GompertzGPD109Analysis <-
 GompertzGPD109Analysis <-
   extrapolateAnalysisFrom109(GompertzGPD109Analysis)
 GompertzGPD109Analysis <-
-  addFittedColumnTo109(GompertzGPD109Analysis)
+  addFittedColumnTo109(GompertzGPD109Analysis, maxAge)
 
 title <- paste(
   "GompertzGPD",
@@ -267,16 +267,14 @@ MakehamGPD109Analysis <-
   applyFittedEVTModelOnData(MakehamGPD104, df109)
 MakehamGPD109Analysis <-
   extrapolateAnalysisFrom109(MakehamGPD109Analysis)
-MakehamGPD109Analysis <- addFittedColumnTo109(MakehamGPD109Analysis)
+MakehamGPD109Analysis <- addFittedColumnTo109(MakehamGPD109Analysis, maxAge)
 
 title <- paste(
   "MakehamGPD",
   COHORT,
   GENDER,
-  "with Threshold Age",
-  thresholdAgeGomp,
-  "and Extrapolation to",
-  maxAgeExtra
+  "Threshold Age",
+  thresholdAgeMake
 )
 plotMakehamGPD109 <- plotLogMortalitySplitData(
   MakehamGPD109Analysis,
@@ -285,14 +283,14 @@ plotMakehamGPD109 <- plotLogMortalitySplitData(
 plotMakehamGPD109
 plotMakehamGPD109Extra <- plotLogMortalitySplitData(
   MakehamGPD109Analysis$extrapolatedData,
-  xlim = c(70, 125),
-  ylim = c(-4.5, 2.5),
+  xlim = c(70, 115),
+  ylim = c(-4.5, 1.5),
   title = title
 )
 plotMakehamGPD109Extra
 resMakehamGPD109 <- plotResMortality(
   MakehamGPD109Analysis,
-  ylim = 2,
+  ylim = 1,
   title = title
 )
 resMakehamGPD109
@@ -318,7 +316,7 @@ hermiteV104Analysis$modelResults$AIC
 hermiteV109Analysis <- applyFittedHMTModelOnData(hermiteV104, df109)
 hermiteV109Analysis <-
   extrapolateAnalysisFrom109(hermiteV109Analysis)
-hermiteV109Analysis <- addFittedColumnTo109(hermiteV109Analysis)
+hermiteV109Analysis <- addFittedColumnTo109(hermiteV109Analysis, maxAge)
 
 title <- paste(
   "Hermite V",

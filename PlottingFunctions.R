@@ -4,14 +4,14 @@ library(ggthemes)
 
 MODEL_PLOT_THEME <- list(
   theme(
-    text = element_text(size = 8),
-    plot.title = element_text(size = 8),
-    axis.title.x = element_text(size = 8),
-    axis.title.y = element_text(size = 8),
-    axis.text = element_text(size = 8),
-    axis.text.x = element_text(size = 8),
-    legend.text = element_text(size = 8),
-    legend.title = element_text(size = 8),
+    text = element_text(size = 20),
+    plot.title = element_text(size = 24),
+    axis.title.x = element_text(size = 20),
+    axis.title.y = element_text(size = 20),
+    axis.text = element_text(size = 20),
+    axis.text.x = element_text(size = 20),
+    legend.text = element_text(size = 20),
+    legend.title = element_text(size = 20),
     legend.position = "bottom",
     legend.background = element_rect(color = NA)
   )
@@ -27,7 +27,7 @@ plotLogMortality <-
            errorBar = TRUE) {
     plot <- ggplot(dataset$plottingData, aes(x = Age)) +
       geom_line(aes(y = mod), color = "#F8766D", lwd=1) +
-      geom_point(aes(y = obs), alpha = 1 / 5) +
+      geom_point(aes(y = obs), alpha = 1 / 3) +
       xlim(xlim) +
       ylim(ylim) +
       #geom_col(width=0.8)+
@@ -70,7 +70,7 @@ plotLogMortalitySplitData <-
     A <- filter(W, fitted == "Fit")
     B <- filter(W, fitted == "Extrapolation")
     plot <- ggplot() +
-      geom_point(aes(x = W$Age, y = W$obs), alpha = 1 / 5) +
+      geom_point(aes(x = W$Age, y = W$obs), alpha = 1 / 3) +
       geom_line(aes(x = B$Age, y = B$mod, colour = B$model), linetype = "dashed", lwd=1) +
       geom_line(aes(x = A$Age, y = A$mod, colour = A$model), lwd=1) +
       xlim(xlim) +
@@ -122,7 +122,7 @@ plotLogMortalityExtrapolatedSplitData <-
     A <- filter(W, fitted == "Fit")
     B <- filter(W, fitted == "Extrapolation")
     plot <- ggplot() +
-      geom_point(aes(x = W$Age, y = W$obs), alpha = 1 / 5) +
+      geom_point(aes(x = W$Age, y = W$obs), alpha = 1 / 3) +
       geom_line(aes(x = B$Age, y = B$mod, colour = B$model), linetype = "dashed", lwd=1) +
       geom_line(aes(x = A$Age, y = A$mod, colour = A$model), lwd=1) +
       xlim(xlim) +

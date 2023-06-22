@@ -1,12 +1,11 @@
 library(dplyr)
-library(HMDHFDplus)
 
-deaths <- readHMD("data/Canada_Deaths_1x1.txt")
+deaths <- readHMD("data/DeathratesCPPundQPP_forHMD.txt")
 # test <- deaths %>%
 #   mutate(Cohort = Year - Age) %>%
 #   filter(Age == 81 & Cohort >= 1851 & Cohort <= 1915)
 # sum(test$Female)
-exposure <- readHMD("data/Canada_Exposures_1x1.txt")
+exposure <- readHMD("data/ExposuresCPPundQPP_forHMD.txt")
 # test <- exposure %>%
 #   mutate(Cohort = Year - Age) %>%
 #   filter(Age == 81 & Cohort >= 1851 & Cohort <= 1915)

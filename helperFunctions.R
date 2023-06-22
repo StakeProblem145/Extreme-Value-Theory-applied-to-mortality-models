@@ -65,9 +65,9 @@ bestHermiteV <- function(dataFrame, range = c(105:125)) {
   return(returnDf)
 }
 
-addFittedColumnTo109 <- function(analysisData) {
+addFittedColumnTo109 <- function(analysisData, maxAge) {
   temp <- analysisData$plottingData %>%
-    mutate(fitted = if_else(Age <= 104, "Fit", "Extrapolation"))
+    mutate(fitted = if_else(Age <= maxAge, "Fit", "Extrapolation"))
   A <- filter(temp, fitted == "Fit")
   dup <- slice_tail(A, n = 1)
   B <- filter(temp, fitted == "Extrapolation")

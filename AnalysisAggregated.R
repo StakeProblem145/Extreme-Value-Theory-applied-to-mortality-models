@@ -4,13 +4,15 @@ library(patchwork)
 source("graduatePoisson.R")
 source("PlottingFunctions.R")
 source("helperFunctions.R")
+source("ExtrapolateFit.R")
 
 load("data/Canada_HMD_df.Rda")
 load("data/Sweden_Df_Year.Rda")
+load("data/CPP_QPP.Rda")
 
 #### Prep ####
 ##### Data #####
-LAND <- "Canada"
+LAND <- "CanadaCQ"
 GENDER <- "Female"
 if(LAND == "Canada") {
   # Valid Cohorts for Canada 1890 to 1910
@@ -24,12 +26,30 @@ if(LAND == "Canada") {
   cohortMax <- 1910
   COHORT <- "1900 to 1910"
   DF <- Sweden_Df
+} else if (LAND == "CanadaCQ") {
+  # Valid Cohorts for Canada 1890 to 1910
+  cohortMin <- 1890
+  cohortMax <- 1910
+  COHORT <- "1890 to 1910"
+  DF <- QPP_CPP_DF
+  LAND == "Canada"
 }
 
 # In general Age above 70
 minAge <- 70
-maxAge <- 104
+maxAge <- 109
 maxAgeExtra <- 109
+cohortLower <- 1900
+cohortUpper <- 1908
+COHORT <- paste(cohortLower, "to", cohortUpper)
+
+if(cohortLower < cohortMin) {
+  cohortLower <- cohortMin
+}
+
+if(cohortUpper > cohortMax) {
+  cohortUpper <- cohortMax
+}
 
 hmdDfMaxAge104 <- filter(DF, Age >= minAge & Age <= maxAge & Year <= 2020) %>%
   mutate(Cohort = Year - Age)
@@ -40,6 +60,16 @@ hmdDfMaxAge109 <-
 
 # Find full Cohorts
 findFullCohortYears(hmdDfMaxAge109)
+
+for(cohort in unique(hmdDfMaxAge109$Cohort)) {
+  print(cohort)
+  c <- hmdDfMaxAge109 %>%
+    filter(.,Cohort == cohort)
+
+  print(cohort)
+  print(min(c$Age))
+  print(max(c$Age))
+}
 
 #### NOTES ####
 # Canada
@@ -77,15 +107,31 @@ if (LAND == "Sweden" & GENDER == "Male") {
 #### Aggregated Data 1890 to 1910 ####
 
 df104 <- hmdDfMaxAge104 %>%
-  filter(Cohort >= cohortMin & Cohort <= cohortMax & Gender == GENDER) %>%
+  filter(Cohort >= cohortLower & Cohort <= cohortUpper & Gender == GENDER) %>%
   group_by(Age) %>%
   summarise(Deaths = sum(Deaths), Exposure = sum(Exposure))
 
 df109 <- hmdDfMaxAge109 %>%
-  filter(Cohort >= cohortMin & Cohort <= cohortMax & Gender == GENDER) %>%
+  filter(Cohort >= cohortLower & Cohort <= cohortUpper & Gender == GENDER) %>%
   group_by(Age) %>%
   summarise(Deaths = sum(Deaths), Exposure = sum(Exposure))
 
+
+####  Hermite II ####
+bestHermiteIIDf <- bestHermiteII(df104, range = c(110:150))
+#### Hermite V ####
+bestHermiteVDf <- bestHermiteV(df104, range = c(105:125))
+#### Makeham GPD ####
+bestMakehamGPDDf <- bestMakehamGPDThresholdAge(df104)
+####  Hermite II ####
+slice_min(bestHermiteIIDf, order_by = AIC, n = 3)
+#### Hermite V ####
+slice_min(bestHermiteVDf, order_by = AIC, n = 3)
+#### Makeham GPD ####
+slice_min(bestMakehamGPDDf, order_by = AIC, n = 3)
+X1HermiteII <- 112
+thresholdAgeMake <- 96
+X1HermiteV <- 107
 
 
 #### MakehamBeard ####
@@ -109,7 +155,9 @@ MakehamBeardModel104Analysis$modelResults$AIC
 MakehamBeardModel109Analysis <-
   applyFittedCLAModelOnData(MakehamBeardModel104, df109)
 MakehamBeardModel109Analysis <-
-  addFittedColumnTo109(MakehamBeardModel109Analysis)
+  extrapolateAnalysisFrom109(MakehamBeardModel109Analysis)
+MakehamBeardModel109Analysis <-
+  addFittedColumnTo109(MakehamBeardModel109Analysis, maxAge)
 
 
 title <- paste("Makeham Beard", COHORT, GENDER, "and Extrapolation to", maxAgeExtra)
@@ -146,7 +194,9 @@ hermiteII104Analysis$modelResults$AIC
 
 hermiteII109Analysis <-
   applyFittedHMTModelOnData(hermiteII104, df109)
-hermiteII109Analysis <- addFittedColumnTo109(hermiteII109Analysis)
+hermiteII109Analysis <-
+  extrapolateAnalysisFrom109(hermiteII109Analysis)
+hermiteII109Analysis <- addFittedColumnTo109(hermiteII109Analysis, maxAge)
 
 title <- paste(
   "Hermite II",
@@ -171,56 +221,6 @@ resHermiteII109
 
 
 #### EVT #### 
-bestGompertzGPDDf <- bestGompertzGPDThresholdAge(df104)
-slice_min(bestGompertzGPDDf, order_by = AIC, n = 3)
-# thresholdAgeGomp <- 98
-GompertzGPD104 <-
-  graduateGompertzGPD(df104, thresholdAge = thresholdAgeGomp, analysis = FALSE)
-GompertzGPD104Analysis <- createGradAnalysis(GompertzGPD104)
-GompertzGPD104Analysis$modelResults$AIC
-
-# title <- paste(
-#   "Gompertz with GPD",
-#   COHORT,
-#   GENDER,
-#   "with Threshold Age",
-#   thresholdAgeGomp
-# )
-# plotLogMortality(
-#   GompertzGPD104Analysis,
-#   title = title
-# )
-# plotResMortality(
-#   GompertzGPD104Analysis,
-#   ylim = 1,
-#   title = title
-# )
-
-GompertzGPD109Analysis <-
-  applyFittedEVTModelOnData(GompertzGPD104, df109)
-GompertzGPD109Analysis <-
-  addFittedColumnTo109(GompertzGPD109Analysis)
-
-title <- paste(
-  "GompertzGPD",
-  COHORT,
-  GENDER,
-  "with Threshold Age",
-  thresholdAgeGomp,
-  "and Extrapolation to",
-  maxAgeExtra
-)
-plotGompertzGPD109 <- plotLogMortalitySplitData(
-  GompertzGPD109Analysis,
-  title = title
-)
-plotGompertzGPD109
-resGompertzGPD109 <- plotResMortality(
-  GompertzGPD109Analysis,
-  ylim = 2,
-  title = title
-)
-resGompertzGPD109
 
 
 bestMakehamGPDDf <- bestMakehamGPDThresholdAge(df104)
@@ -250,7 +250,9 @@ MakehamGPD104Analysis$modelResults$AIC
 
 MakehamGPD109Analysis <-
   applyFittedEVTModelOnData(MakehamGPD104, df109)
-MakehamGPD109Analysis <- addFittedColumnTo109(MakehamGPD109Analysis)
+MakehamGPD109Analysis <-
+  extrapolateAnalysisFrom109(MakehamGPD109Analysis)
+MakehamGPD109Analysis <- addFittedColumnTo109(MakehamGPD109Analysis, maxAge)
 
 title <- paste(
   "MakehamGPD",
@@ -292,7 +294,9 @@ hermiteV104Analysis$modelResults$AIC
 # )
 
 hermiteV109Analysis <- applyFittedHMTModelOnData(hermiteV104, df109)
-hermiteV109Analysis <- addFittedColumnTo109(hermiteV109Analysis)
+hermiteV109Analysis <-
+  extrapolateAnalysisFrom109(hermiteV109Analysis)
+hermiteV109Analysis <- addFittedColumnTo109(hermiteV109Analysis, maxAge)
 
 title <- paste(
   "Hermite V",
@@ -328,6 +332,23 @@ title <- paste(
 )
 plotLogMortalitySplitData(
   megaPlot,
+  title = title,
+  hideLegend = FALSE
+)
+megaPlotExtra <- bind_rows(MakehamBeardModel109Analysis$extrapolatedData,
+                           hermiteII109Analysis$extrapolatedData,
+                           MakehamGPD109Analysis$extrapolatedData,
+                           hermiteV109Analysis$extrapolatedData)
+maxAgeExtrapol <- 125
+title <- paste(
+  "Models", COHORT, LAND, GENDER,
+  "and Extrapolation to",
+  maxAgeExtrapol
+)
+plotLogMortalitySplitData(
+  megaPlotExtra,
+  xlim = c(70, 125),
+  ylim = c(-4.5, 2.5),
   title = title,
   hideLegend = FALSE
 )
