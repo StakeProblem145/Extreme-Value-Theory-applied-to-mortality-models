@@ -76,7 +76,7 @@ addFittedColumnTo109 <- function(analysisData, maxAge) {
   analysisData$plottingData <- bind_rows(A, B)
   
   temp <- analysisData$residualData %>%
-    mutate(fitted = if_else(Age <= 104, "Fit", "Extrapolation"))
+    mutate(fitted = if_else(Age <= maxAge, "Fit", "Extrapolation"))
   A <- filter(temp, fitted == "Fit")
   dup <- slice_tail(A, n = 1)
   B <- filter(temp, fitted == "Extrapolation")
@@ -86,7 +86,7 @@ addFittedColumnTo109 <- function(analysisData, maxAge) {
 
   if("extrapolatedData" %in% names(analysisData)){
     temp <- analysisData$extrapolatedData %>%
-      mutate(fitted = if_else(Age <= 104, "Fit", "Extrapolation"))
+      mutate(fitted = if_else(Age <= maxAge, "Fit", "Extrapolation"))
     A <- filter(temp, fitted == "Fit")
     dup <- slice_tail(A, n = 1)
     B <- filter(temp, fitted == "Extrapolation")

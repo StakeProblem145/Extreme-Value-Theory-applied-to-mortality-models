@@ -12,7 +12,7 @@ load("data/CPP_QPP.Rda")
 
 #### Prep ####
 ##### Data #####
-LAND <- "CanadaCQ"
+LAND <- "Canada"
 GENDER <- "Female"
 if(LAND == "Canada") {
   # Valid Cohorts for Canada 1890 to 1910
@@ -23,7 +23,7 @@ if(LAND == "Canada") {
 } else if(LAND == "Sweden") {
   # Valid Cohort for Sweden 1900 to 1911
   cohortMin <- 1900
-  cohortMax <- 1910
+  cohortMax <- 1917
   COHORT <- "1900 to 1910"
   DF <- Sweden_Df
 } else if (LAND == "CanadaCQ") {
@@ -32,15 +32,16 @@ if(LAND == "Canada") {
   cohortMax <- 1910
   COHORT <- "1890 to 1910"
   DF <- QPP_CPP_DF
-  LAND == "Canada"
+  LAND <- "Canada"
 }
 
 # In general Age above 70
 minAge <- 70
+# Canadian men set maxAge to 106
 maxAge <- 109
 maxAgeExtra <- 109
-cohortLower <- 1900
-cohortUpper <- 1908
+cohortLower <- 1905
+cohortUpper <- 1905
 COHORT <- paste(cohortLower, "to", cohortUpper)
 
 if(cohortLower < cohortMin) {
@@ -75,33 +76,33 @@ for(cohort in unique(hmdDfMaxAge109$Cohort)) {
 # Canada
 # Female
 if (LAND == "Canada" & GENDER == "Female") {
-  X1HermiteII <- 116
+  X1HermiteII <- 112
   thresholdAgeGomp <- 99
   thresholdAgeMake <- 98
-  X1HermiteV <- 112
+  X1HermiteV <- 109
 }
 # Male
 if (LAND == "Canada" & GENDER == "Male") {
-  X1HermiteII <- 120
+  X1HermiteII <- 150
   thresholdAgeGomp <- 99
-  thresholdAgeMake <- 98
-  X1HermiteV <- 113
+  thresholdAgeMake <- 96
+  X1HermiteV <- 110
 }
 
 # Sweden
 # Female
 if (LAND == "Sweden" & GENDER == "Female") {
-  X1HermiteII <- 116
+  X1HermiteII <- 117
   thresholdAgeGomp <- 99
   thresholdAgeMake <- 98
   X1HermiteV <- 112
 }
 # Male
 if (LAND == "Sweden" & GENDER == "Male") {
-  X1HermiteII <- 120
+  X1HermiteII <- 150
   thresholdAgeGomp <- 99
-  thresholdAgeMake <- 98
-  X1HermiteV <- 113
+  thresholdAgeMake <- 97
+  X1HermiteV <- 109
 }
 
 #### Aggregated Data 1890 to 1910 ####
@@ -129,9 +130,9 @@ slice_min(bestHermiteIIDf, order_by = AIC, n = 3)
 slice_min(bestHermiteVDf, order_by = AIC, n = 3)
 #### Makeham GPD ####
 slice_min(bestMakehamGPDDf, order_by = AIC, n = 3)
-X1HermiteII <- 112
-thresholdAgeMake <- 96
-X1HermiteV <- 107
+X1HermiteII <- 113
+thresholdAgeMake <- 99
+X1HermiteV <- 111
 
 
 #### MakehamBeard ####
@@ -255,13 +256,7 @@ MakehamGPD109Analysis <-
 MakehamGPD109Analysis <- addFittedColumnTo109(MakehamGPD109Analysis, maxAge)
 
 title <- paste(
-  "MakehamGPD",
-  COHORT,
-  GENDER,
-  "with Threshold Age",
-  thresholdAgeGomp,
-  "and Extrapolation to",
-  maxAgeExtra
+  "MakehamGPD 1905 Female Threshold Age 99"
 )
 plotMakehamGPD109 <- plotLogMortalitySplitData(
   MakehamGPD109Analysis,
@@ -270,7 +265,7 @@ plotMakehamGPD109 <- plotLogMortalitySplitData(
 plotMakehamGPD109
 resMakehamGPD109 <- plotResMortality(
   MakehamGPD109Analysis,
-  ylim = 2,
+  ylim = 1,
   title = title
 )
 resMakehamGPD109
@@ -342,19 +337,20 @@ megaPlotExtra <- bind_rows(MakehamBeardModel109Analysis$extrapolatedData,
 maxAgeExtrapol <- 125
 title <- paste(
   "Models", COHORT, LAND, GENDER,
-  "and Extrapolation to",
-  maxAgeExtrapol
+  "Extrapolated"
 )
-plotLogMortalitySplitData(
+plotLogMortalitySplitDataWithVLine(
   megaPlotExtra,
   xlim = c(70, 125),
   ylim = c(-4.5, 2.5),
   title = title,
-  hideLegend = FALSE
+  hideLegend = FALSE,
+  vline = c(thresholdAgeMake, X1HermiteII, X1HermiteV)
 )
 
 AggregatedPatchwork <- plotMakehamBeard109 + plotHermiteII109 + plotMakehamGPD109 + plotHermiteV109
 AggregatedPatchworkRes <- resMakehamBeard109 + resHermiteII109 + resMakehamGPD109 + resHermiteV109
+AggregatedPatchworkRes
 
 title <- paste(LAND, "Aggregated", GENDER, "Patchwork.png", sep = "")
 titleRes <- paste(LAND, "Aggregated", GENDER, "PatchworkRes.png", sep = "")

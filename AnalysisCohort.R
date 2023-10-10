@@ -10,14 +10,6 @@ load("data/Canada_HMD_df.Rda")
 load("data/Sweden_Df_Year.Rda")
 load("data/CPP_QPP.Rda")
 
-CPP_df <- CPP_df %>%
-  mutate(Cohort = Year - Age) %>%
-  filter(Exposure > 0 | Deaths > 0)
-
-QPP_df <- QPP_df %>%
-  mutate(Cohort = Year - Age) %>%
-  filter(Exposure > 0 | Deaths > 0)
-
 #### Prep ####
 ##### Data #####
 LAND <- "Canada"
